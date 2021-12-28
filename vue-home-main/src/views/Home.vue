@@ -1,30 +1,38 @@
 <template>
   <div class="events">
-    <h4>Select Drop Off Time:</h4>
-    <Datepicker v-model="date" @closed="fetchDropOff()"/>
-    <Emission  :event="events" />
+    <section>
+      <h4>Pick a Range Date fom Dropoff Time:</h4>
+      <date-picker
+        v-model:value="date"
+        type="date"
+        range
+        placeholder="Select date range"
+
+        @close="fetchDropOff()"
+
+      ></date-picker>
+      <Emission  :event="events" />
+    </section>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
 import Emission from "@/components/Emission.vue";
 import EmissionService from "@/services/EmissionService.js";
-import Datepicker from "vue3-date-time-picker";
-import "vue3-date-time-picker/dist/main.css";
-
+import DatePicker from "vue-datepicker-next";
+import "vue-datepicker-next/index.css";
 
 
 export default {
   name: "Home",
-  components: {
-    Emission,
-    Datepicker,
+  components: { 
+    DatePicker,
+    Emission, 
   },
   data() {
     return {
       events: null,
-      date: null
+      date: [new Date(2021, 5, 24), new Date(2021, 7, 28)],
     };
   },
   created() {
@@ -33,35 +41,32 @@ export default {
         console.log('response is: ', response.data);
         this.events = response.data;
       })
-
   },
   methods : {
     fetchDropOff() {
-      var month, day, hours, minutes, final_datetime;
-      var date = new Date(this.date);
-      month = ("0" + (date.getMonth() + 1)).slice(-2);
-      day = ("0" + date.getDate()).slice(-2);
-      hours = ("0" + date.getHours()).slice(-2);
-      minutes = ("0" + date.getMinutes()).slice(-2);
-      // seconds = ("0" + date.getSeconds()).slice(-2);
-      final_datetime = [date.getFullYear(), month, day].join("-") +" "+ [hours, minutes].join(":");
-      EmissionService.getEmissions().get('/analytics/'+final_datetime)
-        .then(response => {
-          console.log('this response is ', response.data);
-          this.events = response.data;
-        })
-      console.log('events are : ', this.date);
-      console.log('events2 are||||||||| : ', final_datetime);
+      //Declaration of all variables
+      var from_month , from_year, from_day , to_month, to_day, to_year, from_date, to_date, final_from_date, final_to_date;
+      //Range date values
+      from_date = new Date(this.date[0])
+      to_date = new Date(this.date[1])
+      //Destructing the day, month and year from date
+      from_year = from_date.getFullYear();
+      from_month = ("0" + (from_date.getMonth() + 1)).slice(-2);
+      from_day = ("0" + from_date.getDate()).slice(-2);
+      to_year = to_date.getFullYear();
+      to_month = ("0" + (to_date.getMonth() + 1)).slice(-2);
+      to_day = ("0" + to_date.getDate()).slice(-2);
+
+      //Finalizing the date range dates with string format
+      final_from_date = [from_year, from_month, from_day].join("-");
+      final_to_date = [to_year, to_month, to_day].join("-");
+
+      EmissionService.getEmissions().post("/analytic", {final_from_date, final_to_date})
+      .then(response => {
+        response.data.forEach(shipments => console.log("Results are: ",shipments));
+        this.events = response.data;
+        });
+    }
   }
-  }
-  
 };
 </script>
-
-<style scoped>
-  .events {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-</style>
